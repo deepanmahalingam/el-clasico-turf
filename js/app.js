@@ -447,6 +447,11 @@ const App = (() => {
             <a class="btn btn--ghost btn--sm" target="_blank" rel="noopener"
                href="https://wa.me/?text=${encodeURIComponent(shareText)}">👥 Share</a>
           </div>
+          ${
+            tab === "upcoming"
+              ? `<button class="btn btn--danger btn--sm bc-cancel" data-cancel="${b.id}">✕ Cancel Booking</button>`
+              : ""
+          }
         </div>`;
       })
       .join("");
@@ -598,6 +603,17 @@ const App = (() => {
       const slot = e.target.closest(".slot");
       if (!slot || !slot.classList.contains("available")) return;
       selectSlot(Number(slot.dataset.start), Number(slot.dataset.end));
+    });
+
+    // Cancel a booking (upcoming only)
+    $("#bookings-list").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-cancel]");
+      if (!btn) return;
+      if (!confirm("Cancel this booking? The slot will be released.")) return;
+      const user = Store.getSession();
+      const ok = Store.cancelBooking(btn.dataset.cancel, user.id);
+      toast(ok ? "Booking cancelled" : "Could not cancel booking");
+      renderBookings(currentBkTab());
     });
 
     // Bookings tabs

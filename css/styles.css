@@ -66,6 +66,7 @@ html, body {
 .btn--primary:disabled { opacity: 0.5; }
 .btn--navy { background: var(--navy); color: #fff; }
 .btn--ghost { background: var(--green-light); color: var(--green-dark); }
+.btn--danger { background: #fbeaea; color: var(--booked); }
 .btn--block { width: 100%; margin-top: 14px; }
 .btn--sm { padding: 9px 14px; font-size: 0.85rem; border-radius: 10px; }
 
@@ -215,6 +216,7 @@ html, body {
 .bc-meta strong { color: var(--ink); }
 .bc-actions { display: flex; gap: 10px; margin-top: 14px; }
 .bc-actions .btn { flex: 1; }
+.bc-cancel { width: 100%; margin-top: 10px; }
 
 .empty { text-align: center; color: var(--muted); padding: 48px 16px; }
 .empty .e-ico { font-size: 2.4rem; display: block; margin-bottom: 10px; }

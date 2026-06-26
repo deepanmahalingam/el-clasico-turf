@@ -143,6 +143,17 @@ const Store = (() => {
     return booking;
   }
 
+  // Cancelling a booking frees the slot (removes it from the calendar).
+  function cancelBooking(bookingId, userId) {
+    let bookings = getBookings();
+    const before = bookings.length;
+    bookings = bookings.filter(
+      (b) => !(b.id === bookingId && (!userId || b.user_id === userId))
+    );
+    write(KEYS.bookings, bookings);
+    return bookings.length < before;
+  }
+
   return {
     getPricing,
     setVenuePrice,
@@ -160,5 +171,6 @@ const Store = (() => {
     isBooked,
     slotStatus,
     createBooking,
+    cancelBooking,
   };
 })();
