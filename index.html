@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="theme-color" content="#1f8b3f" />
+    <title>El Clasico Turf — Book Your Game</title>
+    <meta
+      name="description"
+      content="Book Football & Box Cricket slots across El Clasico Turf venues. WhatsApp login, instant confirmation."
+    />
+    <link rel="icon" href="assets/logo.jpeg" />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <!-- Toast / notification host -->
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <div id="app">
+      <!-- ===================== LOGIN ===================== -->
+      <section id="screen-login" class="screen screen--auth active">
+        <div class="auth-card">
+          <img src="assets/logo.jpeg" alt="El Clasico Turf" class="auth-logo" />
+          <h1 class="auth-title">El Clasico Turf</h1>
+          <p class="auth-sub">Book Football &amp; Box Cricket in seconds.</p>
+
+          <!-- Step 1: phone -->
+          <div id="login-step-phone">
+            <label class="field-label" for="wa-number">WhatsApp Number</label>
+            <div class="phone-row">
+              <span class="cc">+91</span>
+              <input
+                id="wa-number"
+                type="tel"
+                inputmode="numeric"
+                maxlength="10"
+                placeholder="10-digit number"
+                autocomplete="tel"
+              />
+            </div>
+            <button id="btn-send-otp" class="btn btn--primary btn--block">
+              Send OTP via WhatsApp
+            </button>
+            <p class="hint">
+              We'll send a one-time code to your WhatsApp. No SMS, no spam.
+            </p>
+          </div>
+
+          <!-- Step 2: OTP -->
+          <div id="login-step-otp" class="hidden">
+            <label class="field-label" for="otp-input"
+              >Enter the 6-digit OTP</label
+            >
+            <input
+              id="otp-input"
+              class="otp-input"
+              type="tel"
+              inputmode="numeric"
+              maxlength="6"
+              placeholder="••••••"
+              autocomplete="one-time-code"
+            />
+            <button id="btn-verify-otp" class="btn btn--primary btn--block">
+              Verify &amp; Continue
+            </button>
+            <div class="otp-foot">
+              <button id="btn-change-number" class="link-btn">Change number</button>
+              <button id="btn-resend-otp" class="link-btn">Resend OTP</button>
+            </div>
+          </div>
+        </div>
+        <p class="admin-entry">
+          <button id="btn-admin-login" class="link-btn">Owner / Admin login</button>
+        </p>
+      </section>
+
+      <!-- ===================== APP HEADER ===================== -->
+      <header id="app-header" class="app-header hidden">
+        <img src="assets/logo.jpeg" alt="" class="hdr-logo" />
+        <div class="hdr-title">El Clasico Turf</div>
+        <button id="btn-logout" class="hdr-action" title="Log out">⎋</button>
+      </header>
+
+      <!-- ===================== VENUES ===================== -->
+      <section id="screen-venues" class="screen has-nav">
+        <h2 class="page-h">Choose a Venue</h2>
+        <p class="page-sub">4 turfs • independent calendars</p>
+        <div id="venue-list" class="venue-list"></div>
+      </section>
+
+      <!-- ===================== BOOKING ===================== -->
+      <section id="screen-book" class="screen has-nav">
+        <button class="back-btn" data-back="venues">← Venues</button>
+        <div id="venue-head"></div>
+
+        <h3 class="step-h">Select Sport</h3>
+        <div id="sport-select" class="sport-select"></div>
+
+        <h3 class="step-h">Select Date</h3>
+        <input id="date-picker" type="date" class="date-picker" />
+
+        <h3 class="step-h">Select Slot <span id="slot-price-tag" class="price-tag"></span></h3>
+        <div id="slot-grid" class="slot-grid"></div>
+        <div class="legend">
+          <span><i class="dot dot--free"></i> Available</span>
+          <span><i class="dot dot--booked"></i> Booked</span>
+          <span><i class="dot dot--blocked"></i> Blocked</span>
+        </div>
+      </section>
+
+      <!-- ===================== MY BOOKINGS ===================== -->
+      <section id="screen-bookings" class="screen has-nav">
+        <h2 class="page-h">My Bookings</h2>
+        <div class="tabs">
+          <button class="tab active" data-tab="upcoming">Upcoming</button>
+          <button class="tab" data-tab="past">Past</button>
+        </div>
+        <div id="bookings-list" class="bookings-list"></div>
+      </section>
+
+      <!-- ===================== ADMIN ===================== -->
+      <section id="screen-admin" class="screen has-nav">
+        <h2 class="page-h">Owner Dashboard</h2>
+        <div class="tabs">
+          <button class="tab active" data-atab="pricing">Pricing</button>
+          <button class="tab" data-atab="blocks">Block Slots</button>
+          <button class="tab" data-atab="customers">Customers</button>
+        </div>
+        <div id="admin-pricing" class="admin-pane"></div>
+        <div id="admin-blocks" class="admin-pane hidden"></div>
+        <div id="admin-customers" class="admin-pane hidden"></div>
+      </section>
+
+      <!-- ===================== BOTTOM NAV ===================== -->
+      <nav id="bottom-nav" class="bottom-nav hidden">
+        <button class="nav-btn active" data-nav="venues">
+          <span class="nav-ico">🏟️</span><span>Book</span>
+        </button>
+        <button class="nav-btn" data-nav="bookings">
+          <span class="nav-ico">📅</span><span>My Games</span>
+        </button>
+        <button class="nav-btn nav-admin hidden" data-nav="admin">
+          <span class="nav-ico">⚙️</span><span>Admin</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- ===================== CONFIRM MODAL ===================== -->
+    <div id="confirm-modal" class="modal hidden">
+      <div class="modal-card">
+        <div id="confirm-body"></div>
+      </div>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/store.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
