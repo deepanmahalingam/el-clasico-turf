@@ -33,37 +33,102 @@ const App = (() => {
   }
 
   /* ============================================================
-     AUTH (WhatsApp OTP — mock)
-     In production: POST /auth/request-otp -> WhatsApp Business API.
-     Here we generate the OTP client-side and surface it in a toast.
+     AUTH (WhatsApp OTP)
+     ------------------------------------------------------------
+     LIVE mode  (CONFIG.API_BASE set): calls the Cloudflare Worker,
+       which sends a real OTP via the Meta WhatsApp Cloud API and
+       verifies it server-side. The code never touches the browser.
+     DEMO mode  (API_BASE empty): OTP is generated locally and shown
+       on screen so the app is fully usable without a backend.
      ============================================================ */
-  function sendOtp() {
+  const liveMode = () =>
+    typeof CONFIG !== "undefined" && CONFIG.API_BASE && CONFIG.API_BASE.trim().length > 0;
+
+  async function api(path, body) {
+    const res = await fetch(CONFIG.API_BASE.replace(/\/$/, "") + path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      throw new Error(data.error || "Request failed. Please try again.");
+    }
+    return data;
+  }
+
+  function setBtnLoading(btn, loading, label) {
+    if (!btn) return;
+    if (loading) {
+      btn.dataset.label = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = label || "Please wait…";
+    } else {
+      btn.disabled = false;
+      if (btn.dataset.label) btn.textContent = btn.dataset.label;
+    }
+  }
+
+  async function sendOtp() {
     const raw = $("#wa-number").value.replace(/\D/g, "");
     if (raw.length !== 10) {
       toast("Enter a valid 10-digit WhatsApp number");
       return;
     }
     state.pendingNumber = "+91" + raw;
+    const btn = $("#btn-send-otp");
+
+    if (liveMode()) {
+      setBtnLoading(btn, true, "Sending OTP…");
+      try {
+        await api("/api/auth/request-otp", { whatsapp: state.pendingNumber });
+      } catch (e) {
+        toast(e.message);
+        setBtnLoading(btn, false);
+        return;
+      }
+      setBtnLoading(btn, false);
+      goToOtpStep();
+      toast(`OTP sent to your WhatsApp ${state.pendingNumber} 📲`, "otp");
+      return;
+    }
+
+    // Demo mode
     state.pendingOtp = String(Math.floor(100000 + Math.random() * 900000));
+    goToOtpStep();
+    toast(`Demo OTP for ${state.pendingNumber}: ${state.pendingOtp}`, "otp");
+  }
 
-    // --- Real integration point ---
-    // await fetch('/api/auth/request-otp', { method:'POST',
-    //   body: JSON.stringify({ whatsapp: state.pendingNumber }) })
-    // The backend sends the OTP via WhatsApp template message.
-
+  function goToOtpStep() {
     $("#login-step-phone").classList.add("hidden");
     $("#login-step-otp").classList.remove("hidden");
     $("#otp-input").value = "";
     $("#otp-input").focus();
-    toast(`Demo OTP for ${state.pendingNumber}: ${state.pendingOtp}`, "otp");
   }
 
-  function verifyOtp() {
+  async function verifyOtp() {
     const entered = $("#otp-input").value.replace(/\D/g, "");
-    if (entered !== state.pendingOtp) {
+    if (entered.length < 4) {
+      toast("Enter the OTP you received");
+      return;
+    }
+    const btn = $("#btn-verify-otp");
+
+    if (liveMode()) {
+      setBtnLoading(btn, true, "Verifying…");
+      try {
+        await api("/api/auth/verify-otp", { whatsapp: state.pendingNumber, otp: entered });
+      } catch (e) {
+        toast(e.message);
+        setBtnLoading(btn, false);
+        return;
+      }
+      setBtnLoading(btn, false);
+    } else if (entered !== state.pendingOtp) {
       toast("Incorrect OTP. Try again.");
       return;
     }
+
     const user = Store.upsertUser(state.pendingNumber, "");
     Store.setSession(user);
     enterApp();
@@ -268,6 +333,17 @@ const App = (() => {
       closeConfirm();
       renderSlots();
       return;
+    }
+    // Live mode: send the real "Booking Confirmed" WhatsApp message (best-effort).
+    if (liveMode()) {
+      const v = venueById(booking.venue_id);
+      const dateLabel = new Date(booking.date + "T00:00").toLocaleDateString("en-IN", {
+        weekday: "short", day: "numeric", month: "short", year: "numeric",
+      });
+      api("/api/notify/booking", {
+        whatsapp: booking.user_whatsapp,
+        text: buildConfirmationText(booking, v, dateLabel),
+      }).catch(() => {}); // non-fatal — booking already succeeded
     }
     showConfirmed(booking);
   }
