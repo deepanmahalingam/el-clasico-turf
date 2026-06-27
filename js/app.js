@@ -158,12 +158,20 @@ const App = (() => {
     window.scrollTo(0, 0);
   }
 
+  // Player nav items (Book + My Games) need a logged-in user; the admin
+  // dashboard doesn't have one, so we show only the relevant tabs per mode.
+  function setNavMode(isAdmin) {
+    $('.nav-btn[data-nav="venues"]').classList.toggle("hidden", isAdmin);
+    $('.nav-btn[data-nav="bookings"]').classList.toggle("hidden", isAdmin);
+    $(".nav-admin").classList.toggle("hidden", !isAdmin);
+  }
+
   function enterApp() {
     state.isAdmin = false;
     $("#screen-login").classList.remove("active");
     $("#app-header").classList.remove("hidden");
     $("#bottom-nav").classList.remove("hidden");
-    $(".nav-admin").classList.add("hidden");
+    setNavMode(false);
     renderVenues();
     show("venues");
   }
@@ -178,7 +186,7 @@ const App = (() => {
     $("#screen-login").classList.remove("active");
     $("#app-header").classList.remove("hidden");
     $("#bottom-nav").classList.remove("hidden");
-    $(".nav-admin").classList.remove("hidden");
+    setNavMode(true);
     renderAdmin();
     show("admin");
     toast("Admin mode");
@@ -403,6 +411,10 @@ const App = (() => {
      ============================================================ */
   function renderBookings(tab) {
     const user = Store.getSession();
+    if (!user) {
+      $("#bookings-list").innerHTML = `<div class="empty"><span class="e-ico">🔒</span>Log in as a player to see your games.</div>`;
+      return;
+    }
     const all = Store.bookingsForUser(user.id);
     const now = new Date();
     const upcoming = [];
