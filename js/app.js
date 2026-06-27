@@ -463,8 +463,58 @@ const App = (() => {
      ============================================================ */
   function renderAdmin() {
     renderAdminPricing();
+    renderAdminBookings();
     renderAdminBlocks();
     renderAdminCustomers();
+  }
+
+  // Owner view of every booking, with the power to cancel (frees the slot).
+  function renderAdminBookings() {
+    const pane = $("#admin-bookings");
+    const all = Store.getBookings().slice();
+    if (!all.length) {
+      pane.innerHTML = `<div class="empty"><span class="e-ico">📅</span>No bookings yet.</div>`;
+      return;
+    }
+    const now = new Date();
+    // Upcoming first (soonest at top), then past (most recent first).
+    all.sort((a, b) => (a.date + String(a.start).padStart(2, "0")).localeCompare(b.date + String(b.start).padStart(2, "0")));
+    const upcoming = [];
+    const past = [];
+    all.forEach((b) => {
+      const dt = new Date(b.date + "T" + String(b.end).padStart(2, "0") + ":00");
+      (dt >= now ? upcoming : past).push(b);
+    });
+    past.reverse();
+
+    const card = (b) => {
+      const v = venueById(b.venue_id);
+      const dateLabel = new Date(b.date + "T00:00").toLocaleDateString("en-IN", {
+        weekday: "short", day: "numeric", month: "short",
+      });
+      const isUpcoming = new Date(b.date + "T" + String(b.end).padStart(2, "0") + ":00") >= now;
+      return `
+        <div class="admin-row">
+          <div class="bc-top">
+            <h4>${v.short}</h4>
+            <span class="badge ${isUpcoming ? "badge--up" : "badge--past"}">${isUpcoming ? "Upcoming" : "Past"}</span>
+          </div>
+          <p class="bc-meta">
+            ${b.sport_type === "Football" ? "⚽" : "🏏"} ${b.sport_type} &nbsp; ⏰ ${fmtHour(b.start)}–${fmtHour(b.end)}<br/>
+            📅 ${dateLabel} &nbsp; 💰 <strong>${inr(b.total_price)}</strong><br/>
+            👤 ${b.user_name || "Unnamed"} • ${b.user_whatsapp}
+          </p>
+          ${
+            isUpcoming
+              ? `<button class="btn btn--danger btn--sm bc-cancel" data-admin-cancel="${b.id}">✕ Cancel &amp; Release Slot</button>`
+              : ""
+          }
+        </div>`;
+    };
+
+    pane.innerHTML =
+      (upcoming.length ? `<p class="page-sub">Upcoming (${upcoming.length})</p>` + upcoming.map(card).join("") : "") +
+      (past.length ? `<p class="page-sub">Past (${past.length})</p>` + past.map(card).join("") : "");
   }
 
   function renderAdminPricing() {
@@ -629,7 +679,7 @@ const App = (() => {
     $$('#screen-admin .tab').forEach((t) => {
       t.onclick = () => {
         $$('#screen-admin .tab').forEach((x) => x.classList.toggle("active", x === t));
-        ["pricing", "blocks", "customers"].forEach((p) =>
+        ["pricing", "bookings", "blocks", "customers"].forEach((p) =>
           $("#admin-" + p).classList.toggle("hidden", p !== t.dataset.atab)
         );
       };
@@ -644,6 +694,34 @@ const App = (() => {
       if (!val || Number(val) < 0) return toast("Enter a valid price");
       Store.setVenuePrice(id, val);
       toast(`${venueById(id).short} price updated to ${inr(val)}/hr`);
+    });
+
+    // Admin cancel a customer booking
+    $("#admin-bookings").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-admin-cancel]");
+      if (!btn) return;
+      const id = btn.dataset.adminCancel;
+      const booking = Store.getBookings().find((b) => b.id === id);
+      if (!booking) return;
+      if (!confirm(`Cancel ${booking.user_name || "this customer"}'s booking? The slot will be released.`)) return;
+      Store.cancelBooking(id); // admin: no user scope
+      // Live mode: let the customer know via WhatsApp (best-effort).
+      if (liveMode()) {
+        const v = venueById(booking.venue_id);
+        const dateLabel = new Date(booking.date + "T00:00").toLocaleDateString("en-IN", {
+          weekday: "short", day: "numeric", month: "short", year: "numeric",
+        });
+        api("/api/notify/booking", {
+          whatsapp: booking.user_whatsapp,
+          text:
+            `⚠️ *El Clasico Turf — Booking Cancelled*\n\n` +
+            `Your booking has been cancelled by the venue:\n` +
+            `🏟️ ${v.name}\n📅 ${dateLabel}, ${fmtHour(booking.start)}–${fmtHour(booking.end)}\n\n` +
+            `Sorry for the inconvenience. Please rebook or contact us.`,
+        }).catch(() => {});
+      }
+      toast("Booking cancelled — slot released");
+      renderAdminBookings();
     });
 
     // Admin block toggle
