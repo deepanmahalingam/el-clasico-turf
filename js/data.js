@@ -58,9 +58,9 @@ const AMENITY_META = {
   "Drinking Water": { icon: "🚰", label: "Drinking Water" },
 };
 
-// Operating hours: hourly slots from 05:00 to 23:00 (last slot 22:00–23:00).
-const OPEN_HOUR = 5;
-const CLOSE_HOUR = 23;
+// Operating hours: open 24 hours — hourly slots covering 00:00–24:00.
+const OPEN_HOUR = 0;
+const CLOSE_HOUR = 24;
 
 function buildSlots() {
   const slots = [];

@@ -14,8 +14,9 @@ const App = (() => {
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
   const fmtHour = (h) => {
-    const ampm = h >= 12 ? "PM" : "AM";
-    const hr = h % 12 === 0 ? 12 : h % 12;
+    const hh = ((h % 24) + 24) % 24; // 24 -> 0 (midnight), keeps end-times correct
+    const ampm = hh >= 12 ? "PM" : "AM";
+    const hr = hh % 12 === 0 ? 12 : hh % 12;
     return `${hr}:00 ${ampm}`;
   };
   const venueById = (id) => VENUES.find((v) => v.id === id);
